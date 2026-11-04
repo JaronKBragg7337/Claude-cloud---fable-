@@ -4,6 +4,7 @@ Small browser toys built around a tesseract (a 4D hypercube). No build step, no 
 
 - `index.html` is Tesseract Drift, a generative art and ambient sound toy.
 - `anatomy.html` is Tesseract Anatomy, a cross-section and unfolding explorer.
+- `pages.html` is Tesseract Pages, the first build of the direction below: eight rooms on the eight cells of a turning tesseract.
 
 ## Tesseract Drift
 
@@ -22,6 +23,14 @@ Rotation speeds per 4D plane, 3D drift, w depth (the 4D perspective distance), z
 
 - **Slice.** A 3D hyperplane at w = h cuts the rotated tesseract. Each of the eight cubic cells meets the hyperplane in a convex polygon, and those polygons are the faces of the cross-section. Sweep h or drift the xw, yw and zw angles to morph the solid. The readout gives its vertex, edge and face counts and which cells it passes through. A faint shadow of the whole tesseract shows the cut, warm above the plane and cool below.
 - **Unfold.** The eight cells laid out as the familiar cross-shaped net, hinged in 4D. The fold slider turns every hinge from flat to closed, and the net passes through the fourth axis on its way to becoming a tesseract again. Cells keep the same colors in both modes, so a face in the slice is recognisably a cut through that cell.
+
+## Tesseract Pages (first build, 11/4)
+
+- The eight Seam Room rooms (Garage, Media Room, Kitchen, Gym, Hallway, Closet, Music Studio, the Creature's Room) are assigned to the eight cells.
+- **Ground zero** is the +w direction, toward the viewer. The cell whose centre is furthest along +w after the 4D rotation is the active page. Its front face carries the page: the room is loaded in an iframe and mapped onto that face with a CSS homography, so the page sits inside the cube and skews with it as it turns. The cube turning is the fold between pages; the leaving page stays on its face for a moment and fades.
+- **Who turns it.** Drag anywhere outside the page: sideways pulls the next room in from the side (xw plane), up or down brings the rooms above and below (yw plane). Let go and it coasts. Or leave it turning on its own: seconds per page sets the rhythm, wander adds yw and zw drift so all eight cells get their turn. Previous and Next step a quarter turn.
+- The HUD names the active room, how long it has been held, and which cell is arriving. The dock keeps the time held in each room.
+- Inside a claude.ai artifact other sites cannot be framed, so that copy shows a card per room with a link; opened from the repo or from the site, the real rooms show on the faces.
 
 ## Direction - "this is it" (Jaron, 11/4/2026 4:20 PM)
 
