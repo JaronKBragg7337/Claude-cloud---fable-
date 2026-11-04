@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tesseract Drift</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one full-bleed canvas; the identity sits top-left, the control dock slides up from the bottom edge. Single dark theme by choice. */
+:root{
+  --void:#08070f;
+  --ink:#12101f;
+  --fg:#ece8f6;
+  --fg-dim:#8f87ad;
+  --line:#2a2640;
+  --near:#ffb347;
+  --far:#4f5bff;
+  --mist:#8a7fb8;
+  --display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{margin:0;background:var(--void);color:var(--fg);font-family:var(--mono);font-size:12px;overflow:hidden;overscroll-behavior:none}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
+.brand{position:fixed;top:0;left:0;right:0;z-index:3;pointer-events:none;
+  padding-top:calc(14px + env(safe-area-inset-top,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.brand h1{margin:0;font-family:var(--display);font-weight:300;font-size:clamp(16px,2.4vw,24px);letter-spacing:.08em;text-transform:uppercase;line-height:1;text-wrap:balance}
+.brand h1 b{font-weight:600;color:var(--near)}
+.brand p{margin:6px 0 0;color:var(--fg-dim);max-width:46ch;line-height:1.5}
+.readout{text-align:right;color:var(--fg-dim);font-variant-numeric:tabular-nums;line-height:1.6;white-space:nowrap}
+.readout span{color:var(--fg)}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:4;background:color-mix(in srgb,var(--ink) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);
+  padding-block:12px calc(14px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  transition:transform .35s cubic-bezier(.2,.8,.2,1);max-height:62vh;overflow-y:auto}
+.dock.hidden{transform:translateY(100%)}
+.dock-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px 28px;max-width:1240px;margin:0 auto}
+fieldset{border:0;padding:0;margin:0;min-width:0}
+legend{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--fg-dim);padding:0;margin-bottom:6px}
+.row{display:grid;grid-template-columns:7.5em 1fr 3.6em;align-items:center;gap:10px;min-width:0;padding:3px 0}
+.row label{color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row output{text-align:right;color:var(--fg-dim);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;min-width:0;accent-color:var(--near);height:22px;margin:0;background:transparent}
+input[type=range]:focus-visible{outline:2px solid var(--near);outline-offset:2px;border-radius:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button{font:inherit;font-size:11px;letter-spacing:.06em;color:var(--fg);background:transparent;border:1px solid var(--line);border-radius:999px;padding:7px 12px;cursor:pointer;line-height:1}
+button:hover{border-color:var(--fg-dim)}
+button:focus-visible{outline:2px solid var(--near);outline-offset:2px}
+button[aria-pressed=true]{border-color:var(--near);color:var(--near)}
+button.swatch{display:inline-flex;align-items:center;gap:8px}
+button.swatch i{width:28px;height:10px;border-radius:999px;display:inline-block;background:linear-gradient(90deg,var(--sw-near),var(--sw-far))}
+.pill{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:5;background:var(--ink);border-color:var(--fg-dim)}
+.hint{color:var(--fg-dim);line-height:1.5;margin:0}
+.snap{position:fixed;inset:0;z-index:9;background:color-mix(in srgb,var(--void) 92%,transparent);display:grid;place-items:center;gap:12px;grid-template-rows:1fr auto;
+  padding-block:calc(16px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.snap img{max-width:100%;max-height:100%;border:1px solid var(--line);object-fit:contain}
+.snap .bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center}
+@media (max-width:640px){
+  .brand p{display:none}
+  .readout{font-size:10px}
+  .dock{max-height:58vh}
+  .row{grid-template-columns:6.5em 1fr 3.2em}
+}
+@media (prefers-reduced-motion:reduce){
+  .dock{transition:none}
+}
+</style>
+</head>
+<body>
+
+<canvas id="c" aria-label="Tesseract particle field. Drag to rotate, move the pointer to stir the field and play notes."></canvas>
+
+<header class="brand">
+  <div>
+    <h1>Tesseract <b>Drift</b></h1>
+    <p>A hypercube turning through its fourth axis. Edges warm as they come toward you in w and cool as they recede. Drag to rotate, move to stir and pluck, switch sound on for the drone.</p>
+  </div>
+  <div class="readout" id="readout" aria-live="off">
+    xw <span id="r-xw">0.000</span>&nbsp; yw <span id="r-yw">0.000</span>&nbsp; zw <span id="r-zw">0.000</span><br>
+    chord <span id="r-chord">—</span><br>
+    <span id="r-fps">0</span> fps
+  </div>
+</header>
+
+<button class="pill" id="toggle" aria-expanded="true" aria-controls="dock">Hide controls</button>
+
+<aside class="dock" id="dock" aria-label="Controls">
+  <div class="dock-grid">
+    <fieldset>
+      <legend>Fourth-axis rotation</legend>
+      <div class="row"><label for="xw">xw plane</label><input type="range" id="xw" min="-1" max="1" step="0.01" value="0.35"><output for="xw" id="o-xw">0.35</output></div>
+      <div class="row"><label for="yw">yw plane</label><input type="range" id="yw" min="-1" max="1" step="0.01" value="0.22"><output for="yw" id="o-yw">0.22</output></div>
+      <div class="row"><label for="zw">zw plane</label><input type="range" id="zw" min="-1" max="1" step="0.01" value="0.13"><output for="zw" id="o-zw">0.13</output></div>
+      <div class="row"><label for="spin">3D drift</label><input type="range" id="spin" min="0" max="1" step="0.01" value="0.2"><output for="spin" id="o-spin">0.20</output></div>
+      <div class="row"><label for="depth">w depth</label><input type="range" id="depth" min="2.6" max="7" step="0.05" value="3.2"><output for="depth" id="o-depth">3.20</output></div>
+      <div class="row"><label for="zoom">zoom</label><input type="range" id="zoom" min="0.5" max="2" step="0.01" value="1"><output for="zoom" id="o-zoom">1.00</output></div>
+    </fieldset>
+    <fieldset>
+      <legend>Field</legend>
+      <div class="row"><label for="turb">turbulence</label><input type="range" id="turb" min="0" max="2" step="0.01" value="0.8"><output for="turb" id="o-turb">0.80</output></div>
+      <div class="row"><label for="pull">edge pull</label><input type="range" id="pull" min="0" max="2" step="0.01" value="1"><output for="pull" id="o-pull">1.00</output></div>
+      <div class="row"><label for="count">particles</label><input type="range" id="count" min="400" max="6000" step="100" value="2600"><output for="count" id="o-count">2600</output></div>
+      <div class="row"><label for="trail">trail</label><input type="range" id="trail" min="0.80" max="0.985" step="0.005" value="0.94"><output for="trail" id="o-trail">0.94</output></div>
+      <div class="chips" style="margin-top:8px">
+        <button type="button" id="reseed">Reseed</button>
+        <button type="button" id="snapshot">Snapshot</button>
+        <span class="hint">seed <span id="r-seed">0</span></span>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Palette</legend>
+      <div class="chips" id="palettes"></div>
+    </fieldset>
+    <fieldset>
+      <legend>Sound</legend>
+      <div class="chips" style="margin-bottom:6px">
+        <button type="button" id="sound" aria-pressed="false">Sound on</button>
+        <span class="hint">x: filter, y: space, movement: plucks</span>
+      </div>
+      <div class="row"><label for="vol">volume</label><input type="range" id="vol" min="0" max="1" step="0.01" value="0.5"><output for="vol" id="o-vol">0.50</output></div>
+      <div class="row"><label for="root">root note</label><input type="range" id="root" min="33" max="57" step="1" value="45"><output for="root" id="o-root">A2</output></div>
+    </fieldset>
+  </div>
+</aside>
+
+<div class="snap" id="snap" hidden>
+  <img id="snapimg" alt="Snapshot of the current frame">
+  <div class="bar">
+    <span class="hint">Right-click or long-press the image to save it.</span>
+    <button type="button" id="snapclose">Back to the field</button>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const canvas = $('c'), ctx = canvas.getContext('2d', { alpha: false });
+const TAU = Math.PI * 2;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- palettes: bg, near (toward you in w), far, mist ---------- */
+const PALETTES = [
+  { name: 'Hyperamber', void: '#08070f', near: [255,179,71],  far: [79,91,255],  mist: [138,127,184] },
+  { name: 'Ultraviolet', void: '#0a0612', near: [255,95,210], far: [61,214,255], mist: [122,106,160] },
+  { name: 'Glacier',     void: '#050a0f', near: [232,251,255], far: [47,124,255], mist: [95,138,168] },
+  { name: 'Ember',       void: '#0f0705', near: [255,209,102], far: [239,35,60],  mist: [160,106,90] },
+];
+let pal = PALETTES[0];
+const BINS = 16;
+let binColors = [];
+function buildBins() {
+  binColors = [];
+  for (let i = 0; i < BINS; i++) {
+    const t = i / (BINS - 1);
+    const c = pal.near.map((v, k) => Math.round(v + (pal.far[k] - v) * t));
+    binColors.push(`rgba(${c[0]},${c[1]},${c[2]},`);
+  }
+  document.documentElement.style.setProperty('--void', pal.void);
+  document.documentElement.style.setProperty('--near', `rgb(${pal.near.join(',')})`);
+  document.documentElement.style.setProperty('--far', `rgb(${pal.far.join(',')})`);
+}
+function edgeColor(t, a) {
+  const c = pal.near.map((v, k) => Math.round(v + (pal.far[k] - v) * t));
+  return `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+}
+
+/* ---------- simplex noise ---------- */
+function makeNoise(seed) {
+  const p = new Uint8Array(256); for (let i = 0; i < 256; i++) p[i] = i;
+  let s = seed >>> 0 || 1;
+  const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
+  for (let i = 255; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); const t = p[i]; p[i] = p[j]; p[j] = t; }
+  const perm = new Uint8Array(512), pm = new Uint8Array(512);
+  for (let i = 0; i < 512; i++) { perm[i] = p[i & 255]; pm[i] = perm[i] % 12; }
+  const G = [[1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0],[1,0,1],[-1,0,1],[1,0,-1],[-1,0,-1],[0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]];
+  const F3 = 1 / 3, G3 = 1 / 6;
+  return function (x, y, z) {
+    const s = (x + y + z) * F3;
+    const i = Math.floor(x + s), j = Math.floor(y + s), k = Math.floor(z + s);
+    const t = (i + j + k) * G3;
+    const x0 = x - (i - t), y0 = y - (j - t), z0 = z - (k - t);
+    let i1, j1, k1, i2, j2, k2;
+    if (x0 >= y0) {
+      if (y0 >= z0) { i1=1;j1=0;k1=0;i2=1;j2=1;k2=0; }
+      else if (x0 >= z0) { i1=1;j1=0;k1=0;i2=1;j2=0;k2=1; }
+      else { i1=0;j1=0;k1=1;i2=1;j2=0;k2=1; }
+    } else {
+      if (y0 < z0) { i1=0;j1=0;k1=1;i2=0;j2=1;k2=1; }
+      else if (x0 < z0) { i1=0;j1=1;k1=0;i2=0;j2=1;k2=1; }
+      else { i1=0;j1=1;k1=0;i2=1;j2=1;k2=0; }
+    }
+    const x1 = x0 - i1 + G3, y1 = y0 - j1 + G3, z1 = z0 - k1 + G3;
+    const x2 = x0 - i2 + 2*G3, y2 = y0 - j2 + 2*G3, z2 = z0 - k2 + 2*G3;
+    const x3 = x0 - 1 + 3*G3, y3 = y0 - 1 + 3*G3, z3 = z0 - 1 + 3*G3;
+    const ii = i & 255, jj = j & 255, kk = k & 255;
+    let n = 0, t0, g;
+    t0 = .6 - x0*x0 - y0*y0 - z0*z0; if (t0 > 0) { g = G[pm[ii+perm[jj+perm[kk]]]]; t0 *= t0; n += t0*t0*(g[0]*x0+g[1]*y0+g[2]*z0); }
+    t0 = .6 - x1*x1 - y1*y1 - z1*z1; if (t0 > 0) { g = G[pm[ii+i1+perm[jj+j1+perm[kk+k1]]]]; t0 *= t0; n += t0*t0*(g[0]*x1+g[1]*y1+g[2]*z1); }
+    t0 = .6 - x2*x2 - y2*y2 - z2*z2; if (t0 > 0) { g = G[pm[ii+i2+perm[jj+j2+perm[kk+k2]]]]; t0 *= t0; n += t0*t0*(g[0]*x2+g[1]*y2+g[2]*z2); }
+    t0 = .6 - x3*x3 - y3*y3 - z3*z3; if (t0 > 0) { g = G[pm[ii+1+perm[jj+1+perm[kk+1]]]]; t0 *= t0; n += t0*t0*(g[0]*x3+g[1]*y3+g[2]*z3); }
+    return 32 * n;
+  };
+}
+
+/* ---------- tesseract ---------- */
+const V4 = [];
+for (let i = 0; i < 16; i++) V4.push([i & 1 ? 1 : -1, i & 2 ? 1 : -1, i & 4 ? 1 : -1, i & 8 ? 1 : -1]);
+const EDGES = [];
+for (let i = 0; i < 16; i++) for (let b = 0; b < 4; b++) { const j = i ^ (1 << b); if (j > i) EDGES.push([i, j]); }
+const ang = { xy: 0, xz: 0, yz: 0, xw: 0, yw: 0, zw: 0 };
+function rot(p, a, b, th) {
+  const c = Math.cos(th), s = Math.sin(th);
+  const pa = p[a], pb = p[b];
+  p[a] = pa * c - pb * s; p[b] = pa * s + pb * c;
+}
+const P2 = V4.map(() => ({ x: 0, y: 0, w: 0, s: 1, z: 0 }));
+const E2 = EDGES.map(() => ({ ax: 0, ay: 0, bx: 0, by: 0, ux: 0, uy: 0, len2: 1, w: 0, t: 0 }));
+let W = 0, H = 0, DPR = 1, cx = 0, cy = 0, scale = 100;
+
+function projectTesseract() {
+  const dw = +ui.depth.value, d3 = 14, zoom = +ui.zoom.value;
+  scale = Math.min(W, H) * 0.115 * zoom;
+  for (let i = 0; i < 16; i++) {
+    const p = V4[i].slice();
+    rot(p, 0, 3, ang.xw); rot(p, 1, 3, ang.yw); rot(p, 2, 3, ang.zw);
+    rot(p, 0, 1, ang.xy); rot(p, 0, 2, ang.xz); rot(p, 1, 2, ang.yz);
+    const sw = dw / (dw - p[3]);
+    const x3 = p[0] * sw, y3 = p[1] * sw, z3 = p[2] * sw;
+    const f = d3 / (d3 - z3);
+    const q = P2[i];
+    q.x = cx + x3 * f * scale; q.y = cy + y3 * f * scale; q.w = p[3]; q.s = sw * f; q.z = z3;
+  }
+  for (let e = 0; e < 32; e++) {
+    const [i, j] = EDGES[e], a = P2[i], b = P2[j], o = E2[e];
+    o.ax = a.x; o.ay = a.y; o.bx = b.x; o.by = b.y;
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const l = Math.hypot(dx, dy) || 1;
+    o.ux = dx / l; o.uy = dy / l; o.len2 = l * l;
+    o.w = (a.w + b.w) / 2; o.t = (o.w + 2) / 4;
+  }
+}
+
+/* ---------- particles ---------- */
+let N = 2600, px, py, ppx, ppy, life;
+let noise, seed = 0;
+function allocParticles() {
+  N = +ui.count.value;
+  px = new Float32Array(N); py = new Float32Array(N); ppx = new Float32Array(N); ppy = new Float32Array(N); life = new Float32Array(N);
+  for (let i = 0; i < N; i++) spawn(i, true);
+}
+function spawn(i, anywhere) {
+  const r = Math.random();
+  if (anywhere || r < 0.5) { px[i] = Math.random() * W; py[i] = Math.random() * H; }
+  else { // near the hypercube
+    const a = Math.random() * TAU, d = scale * (1.2 + Math.random() * 2.4);
+    px[i] = cx + Math.cos(a) * d; py[i] = cy + Math.sin(a) * d;
+  }
+  ppx[i] = px[i]; ppy[i] = py[i]; life[i] = 60 + Math.random() * 240;
+}
+function reseed(newSeed) {
+  seed = newSeed == null ? (Math.random() * 1e9) >>> 0 : newSeed;
+  noise = makeNoise(seed);
+  $('r-seed').textContent = seed;
+  ang.xy = Math.random() * TAU; ang.xz = Math.random() * TAU; ang.yz = Math.random() * TAU;
+  ang.xw = Math.random() * TAU; ang.yw = Math.random() * TAU; ang.zw = Math.random() * TAU;
+  if (px) for (let i = 0; i < N; i++) spawn(i, true);
+  clearCanvas();
+}
+function clearCanvas() { ctx.fillStyle = pal.void; ctx.fillRect(0, 0, W, H); }
+
+/* ---------- pointer ---------- */
+const ptr = { x: -1e4, y: -1e4, vx: 0, vy: 0, down: false, lx: 0, ly: 0, active: false, travel: 0, lastPluck: 0 };
+canvas.addEventListener('pointerdown', e => { ptr.down = true; ptr.lx = e.clientX; ptr.ly = e.clientY; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointerup', () => { ptr.down = false; });
+canvas.addEventListener('pointercancel', () => { ptr.down = false; });
+canvas.addEventListener('pointerleave', () => { ptr.active = false; ptr.x = -1e4; ptr.y = -1e4; });
+canvas.addEventListener('pointermove', e => {
+  const nx = e.clientX, ny = e.clientY;
+  if (ptr.active) { ptr.vx = nx - ptr.x; ptr.vy = ny - ptr.y; }
+  ptr.x = nx; ptr.y = ny; ptr.active = true;
+  if (ptr.down) {
+    const dx = nx - ptr.lx, dy = ny - ptr.ly;
+    ang.xz += dx * 0.006; ang.yz -= dy * 0.006; ang.xw += dx * 0.0015;
+    ptr.lx = nx; ptr.ly = ny;
+  }
+  ptr.travel += Math.hypot(ptr.vx, ptr.vy);
+  audio.onMove(nx, ny);
+});
+
+/* ---------- audio ---------- */
+const SCALE = [0, 3, 5, 7, 10];
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const midiName = m => NOTE_NAMES[m % 12] + (Math.floor(m / 12) - 1);
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+const audio = {
+  on: false, ac: null, master: null, filter: null, wet: null, analyser: null, partials: [], wave: null, level: 0, chord: '—',
+  start() {
+    if (this.ac) { this.ac.resume(); this.on = true; this.master.gain.setTargetAtTime(+ui.vol.value, this.ac.currentTime, 0.4); return; }
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    const ac = this.ac = new AC();
+    const master = this.master = ac.createGain(); master.gain.value = 0;
+    const analyser = this.analyser = ac.createAnalyser(); analyser.fftSize = 1024; this.wave = new Float32Array(analyser.fftSize);
+    const filter = this.filter = ac.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 900; filter.Q.value = 3;
+    const conv = ac.createConvolver(); conv.buffer = this.impulse(ac, 3.2, 2.8);
+    const wet = this.wet = ac.createGain(); wet.gain.value = 0.4;
+    const dry = ac.createGain(); dry.gain.value = 0.7;
+    filter.connect(dry).connect(master); filter.connect(conv).connect(wet).connect(master);
+    master.connect(analyser).connect(ac.destination);
+    this.bus = filter;
+    // drone: two detuned saws an octave apart
+    const root = mtof(+ui.root.value);
+    this.drones = [[-6, 0.06, 1], [7, 0.05, 1], [0, 0.03, 2]].map(([det, g, mul]) => {
+      const o = ac.createOscillator(), gn = ac.createGain();
+      o.type = 'sawtooth'; o.frequency.value = root * mul; o.detune.value = det; gn.gain.value = g;
+      o.connect(gn).connect(filter); o.start(); return { o, gn, mul };
+    });
+    // four sine partials: one per w-vertex pair, pitch set by the 4D rotation
+    this.partials = [0, 1, 2, 3].map(() => {
+      const o = ac.createOscillator(), gn = ac.createGain();
+      o.type = 'sine'; o.frequency.value = root * 2; gn.gain.value = 0.045;
+      o.connect(gn).connect(filter); o.start(); return { o, gn };
+    });
+    this.on = true;
+    master.gain.setTargetAtTime(+ui.vol.value, ac.currentTime, 0.6);
+  },
+  stop() { if (!this.ac) return; this.on = false; this.master.gain.setTargetAtTime(0, this.ac.currentTime, 0.3); },
+  impulse(ac, seconds, decay) {
+    const rate = ac.sampleRate, len = rate * seconds, buf = ac.createBuffer(2, len, rate);
+    for (let ch = 0; ch < 2; ch++) { const d = buf.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay); }
+    return buf;
+  },
+  setRoot() {
+    if (!this.ac) return;
+    const root = mtof(+ui.root.value), t = this.ac.currentTime;
+    this.drones.forEach(d => d.o.frequency.setTargetAtTime(root * d.mul, t, 0.2));
+  },
+  setVolume() { if (this.ac && this.on) this.master.gain.setTargetAtTime(+ui.vol.value, this.ac.currentTime, 0.1); },
+  update() {
+    if (!this.ac) return;
+    const t = this.ac.currentTime, rootM = +ui.root.value;
+    const names = [];
+    // the chord follows the w coordinate of four reference vertices
+    for (let k = 0; k < 4; k++) {
+      const w = P2[k * 5 % 16].w;             // vertices 0, 5, 10, 15: spread across the cube
+      const deg = Math.round((w + 2) / 4 * 9); // 0..9 across two octaves of the pentatonic
+      const m = rootM + 12 + Math.floor(deg / 5) * 12 + SCALE[deg % 5];
+      this.partials[k].o.frequency.setTargetAtTime(mtof(m), t, 0.25);
+      names.push(midiName(m));
+    }
+    this.chord = names.join(' ');
+    this.analyser.getFloatTimeDomainData(this.wave);
+    let sum = 0; for (let i = 0; i < this.wave.length; i += 4) sum += this.wave[i] * this.wave[i];
+    this.level = Math.sqrt(sum / (this.wave.length / 4));
+  },
+  onMove(x, y) {
+    if (!this.ac || !this.on) return;
+    const t = this.ac.currentTime;
+    const fx = 180 * Math.pow(30, x / Math.max(1, W));     // 180 Hz .. 5.4 kHz
+    this.filter.frequency.setTargetAtTime(fx, t, 0.08);
+    this.wet.gain.setTargetAtTime(0.15 + 0.6 * (1 - y / Math.max(1, H)), t, 0.1);
+    const now = performance.now();
+    if (ptr.travel > 55 && now - ptr.lastPluck > 110) {
+      ptr.travel = 0; ptr.lastPluck = now;
+      const a = Math.atan2(y - cy, x - cx);                 // angle round the hypercube picks the note
+      const deg = Math.floor(((a / TAU) + 0.5) * 15) % 15;
+      const m = +ui.root.value + 24 + Math.floor(deg / 5) * 12 + SCALE[deg % 5];
+      this.pluck(mtof(m), (x / Math.max(1, W)) * 2 - 1);
+    }
+  },
+  pluck(freq, pan) {
+    const ac = this.ac, t = ac.currentTime;
+    const o = ac.createOscillator(), g = ac.createGain(), p = ac.createStereoPanner ? ac.createStereoPanner() : null;
+    o.type = 'triangle'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.09, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
+    if (p) { p.pan.value = pan; o.connect(g).connect(p).connect(this.bus); } else o.connect(g).connect(this.bus);
+    o.start(t); o.stop(t + 1.5);
+  }
+};
+
+/* ---------- ui ---------- */
+const ui = {};
+['xw','yw','zw','spin','depth','zoom','turb','pull','count','trail','vol','root'].forEach(id => {
+  const el = ui[id] = $(id), out = $('o-' + id);
+  const show = () => { out.textContent = id === 'root' ? midiName(+el.value) : id === 'count' ? el.value : (+el.value).toFixed(2); };
+  el.addEventListener('input', () => {
+    show();
+    if (id === 'count') allocParticles();
+    if (id === 'vol') audio.setVolume();
+    if (id === 'root') audio.setRoot();
+  });
+  show();
+});
+const palBox = $('palettes');
+PALETTES.forEach((p, i) => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'swatch'; b.id = 'pal-' + i; b.setAttribute('aria-pressed', String(i === 0));
+  b.style.setProperty('--sw-near', `rgb(${p.near.join(',')})`); b.style.setProperty('--sw-far', `rgb(${p.far.join(',')})`);
+  b.innerHTML = `<i></i>${p.name}`;
+  b.addEventListener('click', () => {
+    pal = p; buildBins(); clearCanvas();
+    palBox.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  });
+  palBox.appendChild(b);
+});
+$('reseed').addEventListener('click', () => reseed());
+$('toggle').addEventListener('click', () => {
+  const dock = $('dock'), hidden = dock.classList.toggle('hidden');
+  $('toggle').textContent = hidden ? 'Show controls' : 'Hide controls';
+  $('toggle').setAttribute('aria-expanded', String(!hidden));
+});
+$('sound').addEventListener('click', () => {
+  if (audio.on) { audio.stop(); $('sound').textContent = 'Sound on'; $('sound').setAttribute('aria-pressed', 'false'); }
+  else { audio.start(); $('sound').textContent = 'Sound off'; $('sound').setAttribute('aria-pressed', 'true'); }
+});
+$('snapshot').addEventListener('click', () => { $('snapimg').src = canvas.toDataURL('image/png'); $('snap').hidden = false; });
+$('snapclose').addEventListener('click', () => { $('snap').hidden = true; });
+addEventListener('keydown', e => { if (e.key === 'Escape' && !$('snap').hidden) $('snap').hidden = true; });
+
+/* ---------- frame ---------- */
+function resize() {
+  DPR = Math.min(devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight; cx = W / 2; cy = H / 2;
+  canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  clearCanvas();
+}
+addEventListener('resize', resize);
+
+let last = performance.now(), frames = 0, fpsT = 0, time = 0;
+const paths = [];
+for (let i = 0; i <= BINS; i++) paths.push(null);
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  let dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (reduceMotion) dt *= 0.35;
+  time += dt;
+  frames++; fpsT += dt; if (fpsT > 0.5) { $('r-fps').textContent = Math.round(frames / fpsT); frames = 0; fpsT = 0; }
+
+  // rotate in 4D and drift in 3D
+  const spin = +ui.spin.value * 0.35;
+  ang.xw += +ui.xw.value * dt * 0.6; ang.yw += +ui.yw.value * dt * 0.6; ang.zw += +ui.zw.value * dt * 0.6;
+  ang.xy += spin * dt * 0.3; ang.xz += spin * dt * 0.5; ang.yz += spin * dt * 0.2;
+  projectTesseract();
+  audio.update();
+  const lvl = Math.min(1, audio.level * 6);
+
+  // fade
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = pal.void; ctx.globalAlpha = 1 - +ui.trail.value; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
+
+  // particles
+  const turb = +ui.turb.value, pull = +ui.pull.value, R = scale * 0.85, R2 = R * R;
+  const ns = 0.0032 / (scale / 100), speed = (1.2 + lvl * 1.6) * Math.min(W, H) / 800 * 60 * dt;
+  const binLists = new Array(BINS + 1); for (let i = 0; i <= BINS; i++) binLists[i] = [];
+  for (let i = 0; i < N; i++) {
+    let x = px[i], y = py[i];
+    let ax = 0, ay = 0, infl = 0, wsum = 0;
+    for (let e = 0; e < 32; e++) {
+      const o = E2[e];
+      const vx = o.bx - o.ax, vy = o.by - o.ay;
+      let t = ((x - o.ax) * vx + (y - o.ay) * vy) / o.len2; t = t < 0 ? 0 : t > 1 ? 1 : t;
+      const dx = x - (o.ax + vx * t), dy = y - (o.ay + vy * t), d2 = dx * dx + dy * dy;
+      if (d2 < R2) {
+        const k = 1 - Math.sqrt(d2) / R, sgn = o.w >= 0 ? 1 : -1;
+        ax += o.ux * k * sgn - dx / R * k * 0.6; ay += o.uy * k * sgn - dy / R * k * 0.6;
+        infl += k; wsum += o.w * k;
+      }
+    }
+    const n = noise(x * ns, y * ns, time * 0.12);
+    const a = n * Math.PI * (1 + turb * 2.2);
+    let vx = Math.cos(a), vy = Math.sin(a);
+    vx += ax * pull * 1.8; vy += ay * pull * 1.8;
+    // pointer vortex
+    const qx = x - ptr.x, qy = y - ptr.y, q2 = qx * qx + qy * qy, VR = scale * 1.4;
+    if (q2 < VR * VR) { const q = Math.sqrt(q2) + 1, k = (1 - q / VR) * 2.2; vx += (-qy / q) * k + ptr.vx * 0.02 * k; vy += (qx / q) * k + ptr.vy * 0.02 * k; }
+    const vl = Math.hypot(vx, vy) || 1;
+    x += vx / vl * speed; y += vy / vl * speed;
+    ppx[i] = px[i]; ppy[i] = py[i]; px[i] = x; py[i] = y;
+    if (--life[i] < 0 || x < -10 || x > W + 10 || y < -10 || y > H + 10) { spawn(i, false); continue; }
+    if (infl > 0.02) { const tt = (wsum / infl + 2) / 4; binLists[Math.max(0, Math.min(BINS - 1, Math.round(tt * (BINS - 1))))].push(i); }
+    else binLists[BINS].push(i);
+  }
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineWidth = 1;
+  for (let b = 0; b <= BINS; b++) {
+    const list = binLists[b]; if (!list.length) continue;
+    ctx.strokeStyle = b === BINS ? `rgba(${pal.mist.join(',')},0.16)` : binColors[b] + '0.55)';
+    ctx.beginPath();
+    for (let k = 0; k < list.length; k++) { const i = list[k]; ctx.moveTo(ppx[i], ppy[i]); ctx.lineTo(px[i], py[i]); }
+    ctx.stroke();
+  }
+
+  // audio ring: the waveform wrapped round the hypercube
+  if (audio.on && audio.wave) {
+    const wv = audio.wave, r0 = scale * 2.9, step = 8;
+    ctx.strokeStyle = edgeColor(0.5, 0.18 + lvl * 0.3); ctx.lineWidth = 1; ctx.beginPath();
+    for (let i = 0; i < wv.length; i += step) {
+      const a = i / wv.length * TAU, r = r0 + wv[i] * scale * 1.6;
+      const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath(); ctx.stroke();
+  }
+
+  // edges, far ones first
+  const order = E2.map((o, i) => i).sort((a, b) => E2[a].w - E2[b].w);
+  for (const e of order) {
+    const o = E2[e];
+    ctx.lineWidth = 0.6 + (o.t) * 1.8 + lvl * 0.8;
+    ctx.strokeStyle = edgeColor(1 - o.t, 0.35 + o.t * 0.55);
+    ctx.beginPath(); ctx.moveTo(o.ax, o.ay); ctx.lineTo(o.bx, o.by); ctx.stroke();
+  }
+  // vertices
+  for (const q of P2) {
+    const t = (q.w + 2) / 4, r = 1.5 + t * 3 + lvl * 3;
+    ctx.fillStyle = edgeColor(1 - t, 0.9);
+    ctx.beginPath(); ctx.arc(q.x, q.y, r, 0, TAU); ctx.fill();
+    ctx.fillStyle = edgeColor(1 - t, 0.12);
+    ctx.beginPath(); ctx.arc(q.x, q.y, r * 4, 0, TAU); ctx.fill();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+
+  if ((frames & 7) === 0) {
+    $('r-xw').textContent = (ang.xw % TAU / TAU).toFixed(3);
+    $('r-yw').textContent = (ang.yw % TAU / TAU).toFixed(3);
+    $('r-zw').textContent = (ang.zw % TAU / TAU).toFixed(3);
+    $('r-chord').textContent = audio.on ? audio.chord : '—';
+  }
+}
+
+buildBins();
+if (innerWidth < 640) $('toggle').click();
+resize();
+reseed(4);
+allocParticles();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
