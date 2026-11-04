@@ -54,3 +54,14 @@ The tesseract was the principle, not the product. What it is for:
 - Metaverse feel. Same family as the Seam Room (lab/seam-room on the site), whose rooms (studio, creature room, kitchen...) can be the first 8 cells.
 
 The first sketch Claude showed him is a turning tesseract with 8 labelled cells, where the cell nearest ground zero lights up and names the active page. It also shows how long each page was held.
+
+### Correction - inside, not outside (Jaron, 11/4 5:18 PM)
+- The pages-on-faces build (Tesseract Pages) is close but is the OUTSIDE view. It's like looking at a cube with a page on each side. The real site pages also add noise (settings/overlays) and can't be played in there.
+- What he means: **you are INSIDE the tesseract, first person.** The tesseract moves; the player mostly doesn't. You can walk around the room you're in, but the shifting is the tesseract's.
+- Picture: a carnival hall of mirrors where every mirror is a door to a different room, angled every way.
+- For testing: **basic rooms, different coloured walls, no website pages.** Complex environments come later.
+- Geometry that fits: each cube cell touches 6 others through its faces, so in any room all 6 sides (4 walls, floor, ceiling) are doorways into 6 different rooms. Only the opposite cell isn't next to you. Looking through doorways repeats like mirrors. As the 4D rotation runs, the slice of the tesseract you stand in morphs (cube -> other shapes), and rooms slide past you and through you.
+- More from Jaron (5:24 PM):
+  - Not perfect squares. Shapes morph into "ugly weird things" depending on the slice you're in at that moment.
+  - **Fade by 4D distance:** rooms further away in the 4th direction are partly see-through, so you can see through them into other rooms. How faded depends on where each room sits on the tesseract right then.
+  - **Every face gets a label/position.** There is a defined ground zero, and the tesseract can be steered to turn a certain way so chosen rooms come forward.
