@@ -34,13 +34,14 @@ Rotation speeds per 4D plane, 3D drift, w depth (the 4D perspective distance), z
 - The HUD names the active room, how long it has been held, and which cell is arriving. The dock keeps the time held in each room.
 - Inside a claude.ai artifact other sites cannot be framed, so that copy shows a card per room with a link; opened from the repo or from the site, the real rooms show on the faces.
 
-## Tesseract Inside (first-person test, 11/4)
+## Tesseract Inside (first person, rebuilt 11/4 evening)
 
-- Your 3D space is the hyperplane w = 0 through the centre of the tesseract. The slice of the tesseract that lies in your space is the room you stand in. Each of its walls is where one cell crosses your space (the same cross-section math as Anatomy), so every wall, the floor and the ceiling is a door into a different cell. At rest the slice is a cube with six walls; while turning it morphs through seven- and eight-sided shapes, and walls slide through you.
-- Eight plain rooms, each a solid colour, no website pages. Every wall carries its room's name, its cell label and its distance along w. Rooms far along the fourth direction are see-through (fade by w), and every cell's edges are drawn faintly as a ghost so you can see rooms beyond the walls.
-- Ground zero is you. Drag the view to look around. Drag the strip to turn the tesseract: sideways rotates your right wall through w (the hidden room swaps in), up and down does the ceiling and floor. The arrows do a quarter turn; "Through the door ahead" turns the room in front of you into your space. Each room has a chip in the dock: tap it and the tesseract steers until that room's wall is dead ahead and solid. It also turns slowly on its own.
-- You can walk a little (WASD or the pad on touch screens), clamped to the ball that every slice contains, but the shifting is the tesseract's.
-- On a phone the repo copy offers "use phone tilt to look" (device orientation, needs a tap to allow on iOS).
+- Built on the classic cube-inside-a-cube picture, which is the perspective projection of the tesseract from a point along the fourth axis. The cell furthest along w is the small inner cube, the cell nearest is the big outer cube that wraps around everything, and the six other cells are the wedge-shaped rooms between them. You stand inside the inner cube room. Its six faces are open doorways into the six wedge rooms, each a real room with depth and a floor, and the eighth room wraps around all of it.
+- When the tesseract turns through the fourth direction the projection flows: your room shrinks away while a neighbour swells around you, and the moment the neighbour's shape contains you, you are in it. The room you are in is the innermost projected cell that contains the eye.
+- The eye stands at floor height, not at the room's exact centre: from the centre every wedge room's side walls are radial planes through the eye and vanish edge-on.
+- Eight plain rooms, solid colours. Every face of every room is a wall panel with an open doorway cut into it, set slightly inside its own room so the two rooms sharing a face each keep their own colour; floors carry a grid. Rooms fade by their distance from yours along the fourth direction (the wraparound room, two steps away, fades most). Every room is labelled with its name, cell and distance.
+- Controls: drag the view to look; the strip turns the tesseract so the room on that side swells around you (sideways for the rooms beside you, up and down for the rooms above and below); the arrows do a full room change; "Walk through the door ahead" brings the room in front of you around you; the chips in the dock bring any chosen room around you. It also turns slowly on its own. You can walk a little inside the room (keys or the touch pad); the room changes are the tesseract's.
+- The repo copy offers "use phone tilt to look" (needs a tap to allow on iOS).
 
 ## Direction - "this is it" (Jaron, 11/4/2026 4:20 PM)
 
