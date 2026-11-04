@@ -66,3 +66,10 @@ The first sketch Claude showed him is a turning tesseract with 8 labelled cells,
   - Not perfect squares. Shapes morph into "ugly weird things" depending on the slice you're in at that moment.
   - **Fade by 4D distance:** rooms further away in the 4th direction are partly see-through, so you can see through them into other rooms. How faded depends on where each room sits on the tesseract right then.
   - **Every face gets a label/position.** There is a defined ground zero, and the tesseract can be steered to turn a certain way so chosen rooms come forward.
+- Jaron after trying Tesseract Inside (5:57 PM): "always standing in yellow." He sees the other rooms only as walls and never gets to be inside them.
+  - Why: the build puts you in the w=0 slice, and the cells are only its walls, so you are never IN a cell (Fable's own "slice thickness" note).
+  - Proposed fix: use the classic projection of a tesseract from inside, a cube inside a cube.
+    - You stand in the inner cube room.
+    - Its 6 faces are open doorways into 6 real 3D rooms (the wedge-shaped "frustum" cells, with depth and floors), and the 8th room wraps around everything.
+    - The 4D turn makes the projection flow: the inner room shrinks away while a neighbour room swells around you, until you are standing in a different room without walking.
+    - Real rooms with depth, not painted walls. The rooms are the experience.
