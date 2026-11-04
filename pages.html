@@ -80,6 +80,8 @@ button[aria-pressed=true]{border-color:var(--near);color:var(--near)}
 .strip button{border-color:transparent;font-size:14px;padding:8px 12px}
 .strip button:hover{border-color:var(--fg-dim)}
 .dock:not(.hidden) ~ .strip{display:none}
+.strip .menu{display:none}
+@media (max-width:640px){ .pill{display:none} .strip .menu{display:inline-block} .strip{max-width:calc(100vw - 32px)} }
 .hint{color:var(--fg-dim);line-height:1.5;margin:0}
 .held{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:center;font-variant-numeric:tabular-nums}
 .held i{width:10px;height:10px;border-radius:2px;display:inline-block}
@@ -148,6 +150,7 @@ button[aria-pressed=true]{border-color:var(--near);color:var(--near)}
   <button type="button" id="prev2" aria-label="Previous room">◀</button>
   <span>drag here to turn</span>
   <button type="button" id="next2" aria-label="Next room">▶</button>
+  <button type="button" id="menu2" aria-label="Controls" class="menu">☰</button>
 </div>
 
 <script>
@@ -305,6 +308,7 @@ if (reduceMotion) setPressed('turn', false);
 $('turn').addEventListener('click', () => { $('turn').textContent = pressed.turn ? 'Turning' : 'Still'; holdTimer = 0; });
 for (const id of ['next', 'next2']) $(id).addEventListener('click', () => setTarget('xw', 1));
 for (const id of ['prev', 'prev2']) $(id).addEventListener('click', () => setTarget('xw', -1));
+$('menu2').addEventListener('click', () => $('toggle').click());
 $('toggle').addEventListener('click', () => {
   const hidden = $('dock').classList.toggle('hidden');
   $('toggle').textContent = hidden ? 'Show controls' : 'Hide controls';
