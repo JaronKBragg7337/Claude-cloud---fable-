@@ -35,6 +35,9 @@ body{margin:0;background:var(--void);color:var(--fg);font-family:var(--mono);fon
 .brand h1{margin:0;font-family:var(--display);font-weight:300;font-size:clamp(16px,2.4vw,24px);letter-spacing:.08em;text-transform:uppercase;line-height:1;text-wrap:balance}
 .brand h1 b{font-weight:600;color:var(--near)}
 .brand p{margin:6px 0 0;color:var(--fg-dim);max-width:46ch;line-height:1.5}
+.brand a{pointer-events:auto;color:var(--near);text-decoration:none;border-bottom:1px solid transparent}
+.brand a:hover{border-bottom-color:var(--near)}
+.brand a:focus-visible{outline:2px solid var(--near);outline-offset:2px}
 .readout{text-align:right;color:var(--fg-dim);font-variant-numeric:tabular-nums;line-height:1.6;white-space:nowrap}
 .readout span{color:var(--fg)}
 .dock{position:fixed;left:0;right:0;bottom:0;z-index:4;background:color-mix(in srgb,var(--ink) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);
@@ -84,6 +87,7 @@ button.swatch i{width:28px;height:10px;border-radius:999px;display:inline-block;
   <div>
     <h1>Tesseract <b>Drift</b></h1>
     <p>A hypercube turning through its fourth axis. Edges warm as they come toward you in w and cool as they recede. Drag to rotate, move to stir and pluck, switch sound on for the drone.</p>
+    <p><a href="anatomy.html">Tesseract Anatomy →</a></p>
   </div>
   <div class="readout" id="readout" aria-live="off">
     xw <span id="r-xw">0.000</span>&nbsp; yw <span id="r-yw">0.000</span>&nbsp; zw <span id="r-zw">0.000</span><br>

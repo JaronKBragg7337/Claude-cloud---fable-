@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tesseract Anatomy</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one full-bleed canvas; identity top-left, readout top-right, control dock along the bottom edge. Single dark theme by choice, shared with Tesseract Drift. */
+:root{
+  --void:#08070f;
+  --ink:#12101f;
+  --fg:#ece8f6;
+  --fg-dim:#8f87ad;
+  --line:#2a2640;
+  --near:#ffb347;
+  --far:#4f5bff;
+  --display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{margin:0;background:var(--void);color:var(--fg);font-family:var(--mono);font-size:12px;overflow:hidden;overscroll-behavior:none}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#c.dragging{cursor:grabbing}
+.brand{position:fixed;top:0;left:0;right:0;z-index:3;pointer-events:none;
+  padding-top:calc(14px + env(safe-area-inset-top,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.brand h1{margin:0;font-family:var(--display);font-weight:300;font-size:clamp(16px,2.4vw,24px);letter-spacing:.08em;text-transform:uppercase;line-height:1;text-wrap:balance}
+.brand h1 b{font-weight:600;color:var(--near)}
+.brand p{margin:6px 0 0;color:var(--fg-dim);max-width:46ch;line-height:1.5}
+.brand a{pointer-events:auto;color:var(--near);text-decoration:none;border-bottom:1px solid transparent}
+.brand a:hover{border-bottom-color:var(--near)}
+.brand a:focus-visible{outline:2px solid var(--near);outline-offset:2px}
+.readout{text-align:right;color:var(--fg-dim);font-variant-numeric:tabular-nums;line-height:1.6;white-space:nowrap}
+.readout span{color:var(--fg)}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:4;background:color-mix(in srgb,var(--ink) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);
+  padding-block:12px calc(14px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  transition:transform .35s cubic-bezier(.2,.8,.2,1);max-height:62vh;overflow-y:auto}
+.dock.hidden{transform:translateY(100%)}
+.dock-inner{max-width:1240px;margin:0 auto;display:grid;gap:12px}
+.modes{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.modes .sep{flex:1}
+.dock-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px 28px}
+fieldset{border:0;padding:0;margin:0;min-width:0}
+legend{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--fg-dim);padding:0;margin-bottom:6px}
+.row{display:grid;grid-template-columns:7.5em 1fr 3.8em;align-items:center;gap:10px;min-width:0;padding:3px 0}
+.row label{color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row output{text-align:right;color:var(--fg-dim);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;min-width:0;accent-color:var(--near);height:22px;margin:0;background:transparent}
+input[type=range]:focus-visible{outline:2px solid var(--near);outline-offset:2px;border-radius:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px}
+button{font:inherit;font-size:11px;letter-spacing:.06em;color:var(--fg);background:transparent;border:1px solid var(--line);border-radius:999px;padding:7px 12px;cursor:pointer;line-height:1}
+button:hover{border-color:var(--fg-dim)}
+button:focus-visible{outline:2px solid var(--near);outline-offset:2px}
+button[aria-pressed=true],button[aria-selected=true]{border-color:var(--near);color:var(--near)}
+button.tab{font-family:var(--display);font-weight:300;font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:9px 14px}
+.pill{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:5;background:var(--ink);border-color:var(--fg-dim)}
+.hint{color:var(--fg-dim);line-height:1.5;margin:0}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;color:var(--fg-dim)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+@media (max-width:640px){
+  .brand p{display:none}
+  .readout{font-size:10px}
+  .dock{max-height:58vh}
+  .row{grid-template-columns:6.5em 1fr 3.4em}
+}
+@media (prefers-reduced-motion:reduce){ .dock{transition:none} }
+</style>
+</head>
+<body>
+
+<canvas id="c" aria-label="Tesseract cross-section and unfolding view. Drag to turn the view."></canvas>
+
+<header class="brand">
+  <div>
+    <h1>Tesseract <b>Anatomy</b></h1>
+    <p>Two ways to see inside a hypercube. Slice it with a 3D hyperplane and watch the cross-section morph, or unfold its eight cubic cells into a net and fold them back up. Drag to turn the view.</p>
+    <p><a href="index.html">← Tesseract Drift</a></p>
+  </div>
+  <div class="readout" id="readout" aria-live="off">
+    <span id="r-line1">—</span><br>
+    <span id="r-line2">—</span><br>
+    <span id="r-line3">—</span>
+  </div>
+</header>
+
+<button class="pill" id="toggle" aria-expanded="true" aria-controls="dock">Hide controls</button>
+
+<aside class="dock" id="dock" aria-label="Controls">
+  <div class="dock-inner">
+    <div class="modes" role="tablist" aria-label="Mode">
+      <button type="button" class="tab" role="tab" id="tab-slice" aria-selected="true">Slice</button>
+      <button type="button" class="tab" role="tab" id="tab-unfold" aria-selected="false">Unfold</button>
+      <span class="sep"></span>
+      <div class="legend" id="legend" aria-label="Cell colors"></div>
+    </div>
+    <div class="dock-grid">
+      <fieldset id="fs-slice">
+        <legend>Hyperplane</legend>
+        <div class="row"><label for="h">position w</label><input type="range" id="h" min="-2.2" max="2.2" step="0.01" value="0"><output for="h" id="o-h">0.00</output></div>
+        <div class="row"><label for="axw">xw angle</label><input type="range" id="axw" min="0" max="360" step="1" value="28"><output for="axw" id="o-axw">28°</output></div>
+        <div class="row"><label for="ayw">yw angle</label><input type="range" id="ayw" min="0" max="360" step="1" value="17"><output for="ayw" id="o-ayw">17°</output></div>
+        <div class="row"><label for="azw">zw angle</label><input type="range" id="azw" min="0" max="360" step="1" value="9"><output for="azw" id="o-azw">9°</output></div>
+        <div class="chips">
+          <button type="button" id="sweep" aria-pressed="true">Sweep</button>
+          <button type="button" id="drift" aria-pressed="false">Drift angles</button>
+          <button type="button" id="wire" aria-pressed="true">Shadow wireframe</button>
+        </div>
+      </fieldset>
+      <fieldset id="fs-unfold" hidden>
+        <legend>Net</legend>
+        <div class="row"><label for="fold">fold</label><input type="range" id="fold" min="0" max="1" step="0.001" value="0.35"><output for="fold" id="o-fold">35%</output></div>
+        <div class="row"><label for="depth">w depth</label><input type="range" id="depth" min="4" max="14" step="0.05" value="7"><output for="depth" id="o-depth">7.00</output></div>
+        <div class="chips">
+          <button type="button" id="animate" aria-pressed="true">Animate fold</button>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>View</legend>
+        <div class="row"><label for="zoom">zoom</label><input type="range" id="zoom" min="0.5" max="2" step="0.01" value="1"><output for="zoom" id="o-zoom">1.00</output></div>
+        <div class="row"><label for="opacity">face opacity</label><input type="range" id="opacity" min="0.2" max="1" step="0.01" value="0.8"><output for="opacity" id="o-opacity">0.80</output></div>
+        <div class="chips">
+          <button type="button" id="spin" aria-pressed="true">Turn view</button>
+          <button type="button" id="reset">Reset view</button>
+        </div>
+      </fieldset>
+    </div>
+  </div>
+</aside>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const canvas = $('c'), ctx = canvas.getContext('2d', { alpha: false });
+const TAU = Math.PI * 2, DEG = Math.PI / 180;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const VOID = '#08070f';
+
+/* ---------- geometry of the tesseract ---------- */
+const V4 = [];
+for (let i = 0; i < 16; i++) V4.push([i & 1 ? 1 : -1, i & 2 ? 1 : -1, i & 4 ? 1 : -1, i & 8 ? 1 : -1]);
+const EDGES = [];
+for (let i = 0; i < 16; i++) for (let b = 0; b < 4; b++) { const j = i ^ (1 << b); if (j > i) EDGES.push([i, j]); }
+const AXIS = ['x', 'y', 'z', 'w'];
+// the eight cubic cells: every (axis, sign) pair
+const CELLS = [];
+for (let a = 0; a < 4; a++) for (const s of [-1, 1]) {
+  const verts = [], edges = [];
+  for (let i = 0; i < 16; i++) if (V4[i][a] === s) verts.push(i);
+  EDGES.forEach((e, k) => { if (V4[e[0]][a] === s && V4[e[1]][a] === s) edges.push(k); });
+  CELLS.push({ a, s, verts, edges, name: AXIS[a] + (s > 0 ? '+' : '−') });
+}
+// cell colors: one hue family per axis, light and dark per sign
+const CELL_HUE = { 0: [34, 22], 1: [262, 248], 2: [168, 186], 3: [330, 350] };
+function cellColor(c, light, alpha) {
+  const hue = CELL_HUE[c.a][c.s > 0 ? 0 : 1];
+  const l = (c.s > 0 ? 62 : 48) * (0.45 + 0.55 * light);
+  return `hsla(${hue},78%,${l}%,${alpha})`;
+}
+const legend = $('legend');
+CELLS.forEach(c => { const s = document.createElement('span'); s.innerHTML = `<i style="background:${cellColor(c, 1, 1)}"></i>${c.name}`; legend.appendChild(s); });
+
+function rot(p, a, b, th) { const c = Math.cos(th), s = Math.sin(th), pa = p[a], pb = p[b]; p[a] = pa * c - pb * s; p[b] = pa * s + pb * c; }
+const vsub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const norm = v => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+
+/* ---------- slice: the hyperplane w = h cuts each cell in a convex polygon ---------- */
+const ang = { xw: 28 * DEG, yw: 17 * DEG, zw: 9 * DEG };
+function rotatedVerts() {
+  return V4.map(v => { const p = v.slice(); rot(p, 0, 3, ang.xw); rot(p, 1, 3, ang.yw); rot(p, 2, 3, ang.zw); return p; });
+}
+function crossSection(R, h) {
+  const hit = new Array(32).fill(null);
+  EDGES.forEach((e, k) => {
+    const P = R[e[0]], Q = R[e[1]], dp = P[3] - h, dq = Q[3] - h;
+    if ((dp < 0) !== (dq < 0)) { const t = dp / (dp - dq); hit[k] = [P[0] + t * (Q[0] - P[0]), P[1] + t * (Q[1] - P[1]), P[2] + t * (Q[2] - P[2])]; }
+  });
+  const faces = [];
+  for (const c of CELLS) {
+    const pts = c.edges.map(k => hit[k]).filter(Boolean);
+    if (pts.length < 3) continue;
+    const cen = [0, 0, 0]; pts.forEach(p => { cen[0] += p[0] / pts.length; cen[1] += p[1] / pts.length; cen[2] += p[2] / pts.length; });
+    let n = null;
+    for (let i = 1; i < pts.length && !n; i++) { const t = cross(vsub(pts[0], cen), vsub(pts[i], cen)); if (Math.hypot(t[0], t[1], t[2]) > 1e-6) n = norm(t); }
+    if (!n) continue;
+    const u = norm(vsub(pts[0], cen)), v = cross(n, u);
+    pts.sort((p, q) => Math.atan2(dot(vsub(p, cen), v), dot(vsub(p, cen), u)) - Math.atan2(dot(vsub(q, cen), v), dot(vsub(q, cen), u)));
+    faces.push({ pts, cell: c });
+  }
+  const V = hit.filter(Boolean).length, F = faces.length;
+  return { faces, V, F, E: V && F ? V + F - 2 : 0, hit };
+}
+
+/* ---------- unfold: the net of eight cubes, hinged in 4D ---------- */
+const CUBE_FACES = [];
+for (let k = 0; k < 3; k++) for (const s of [0, 1]) {
+  const i = (k + 1) % 3, j = (k + 2) % 3, order = [[0, 0], [1, 0], [1, 1], [0, 1]];
+  CUBE_FACES.push(order.map(([bi, bj]) => (s << k) | (bi << i) | (bj << j)));
+}
+function netCells(f) {
+  const th = (1 - f) * Math.PI / 2;
+  return CELLS.map(c => {
+    const free = [0, 1, 2, 3].filter(a => a !== c.a);
+    const pts = [];
+    for (let m = 0; m < 8; m++) {
+      const p = [0, 0, 0, 0]; p[c.a] = c.s;
+      free.forEach((a, bit) => { p[a] = (m >> bit) & 1 ? 1 : -1; });
+      if (c.a === 3 && c.s === 1) {            // outer cell: hinge on the z− cell first
+        p[2] += 1; p[3] -= 1; rot(p, 2, 3, th); p[2] -= 1; p[3] += 1;
+        p[2] += 1; p[3] += 1; rot(p, 2, 3, th); p[2] -= 1; p[3] -= 1;
+      } else if (c.a !== 3) {                   // side cells: hinge on the inner (w−) cell
+        p[c.a] -= c.s; p[3] += 1; rot(p, c.a, 3, -c.s * th); p[c.a] += c.s; p[3] -= 1;
+      }
+      pts.push(p);
+    }
+    return { cell: c, pts };
+  });
+}
+
+/* ---------- view ---------- */
+const view = { yaw: -0.6, pitch: 0.42 };
+let W = 0, H = 0, DPR = 1, cx = 0, cy = 0, scale = 100;
+const LIGHT = norm([0.35, -0.6, -0.72]);
+function toView(p) { // 3D world -> view space (z toward viewer negative)
+  let x = p[0], y = p[1], z = p[2];
+  const cy_ = Math.cos(view.yaw), sy = Math.sin(view.yaw); let x1 = x * cy_ + z * sy, z1 = -x * sy + z * cy_;
+  const cp = Math.cos(view.pitch), sp = Math.sin(view.pitch); let y1 = y * cp - z1 * sp, z2 = y * sp + z1 * cp;
+  return [x1, y1, z2];
+}
+function project(v) { const d = 9, f = d / (d + v[2]); return [cx + v[0] * f * scale, cy + v[1] * f * scale, v[2]]; }
+function project4(p, dw) { const s = dw / (dw - p[3]); return [p[0] * s, p[1] * s, p[2] * s]; }
+
+function drawPolys(polys, opacity) {
+  polys.sort((a, b) => b.depth - a.depth);
+  for (const poly of polys) {
+    const s = poly.scr;
+    ctx.beginPath(); ctx.moveTo(s[0][0], s[0][1]); for (let i = 1; i < s.length; i++) ctx.lineTo(s[i][0], s[i][1]); ctx.closePath();
+    ctx.fillStyle = cellColor(poly.cell, poly.light, opacity); ctx.fill();
+    ctx.strokeStyle = cellColor(poly.cell, 1, Math.min(1, opacity + 0.15)); ctx.lineWidth = 1; ctx.stroke();
+  }
+}
+function makePoly(pts3, cell) {
+  const vv = pts3.map(toView), scr = vv.map(project);
+  let n = [0, 0, 1];
+  for (let i = 2; i < vv.length; i++) { const t = cross(vsub(vv[1], vv[0]), vsub(vv[i], vv[0])); if (Math.hypot(t[0], t[1], t[2]) > 1e-6) { n = norm(t); break; } }
+  const light = Math.abs(dot(n, LIGHT));
+  return { scr, cell, light, depth: vv.reduce((a, v) => a + v[2], 0) / vv.length };
+}
+
+/* ---------- ui ---------- */
+const ui = {};
+['h', 'axw', 'ayw', 'azw', 'fold', 'depth', 'zoom', 'opacity'].forEach(id => {
+  const el = ui[id] = $(id), out = $('o-' + id);
+  const show = () => { out.textContent = id === 'fold' ? Math.round(el.value * 100) + '%' : /^a/.test(id) ? Math.round(el.value) + '°' : (+el.value).toFixed(2); };
+  el.addEventListener('input', () => {
+    show();
+    if (id === 'h') setPressed('sweep', false);
+    if (/^a/.test(id)) { ang[id.slice(1)] = el.value * DEG; setPressed('drift', false); }
+    if (id === 'fold') setPressed('animate', false);
+  });
+  show();
+});
+const pressed = {};
+function setPressed(id, v) { pressed[id] = v; $(id).setAttribute('aria-pressed', String(v)); }
+['sweep', 'drift', 'wire', 'animate', 'spin'].forEach(id => {
+  pressed[id] = $(id).getAttribute('aria-pressed') === 'true';
+  $(id).addEventListener('click', () => setPressed(id, !pressed[id]));
+});
+if (reduceMotion) { setPressed('sweep', false); setPressed('animate', false); setPressed('spin', false); }
+let mode = 'slice';
+function setMode(m) {
+  mode = m;
+  $('tab-slice').setAttribute('aria-selected', String(m === 'slice'));
+  $('tab-unfold').setAttribute('aria-selected', String(m === 'unfold'));
+  $('fs-slice').hidden = m !== 'slice'; $('fs-unfold').hidden = m !== 'unfold';
+}
+$('tab-slice').addEventListener('click', () => setMode('slice'));
+$('tab-unfold').addEventListener('click', () => setMode('unfold'));
+$('reset').addEventListener('click', () => { view.yaw = -0.6; view.pitch = 0.42; });
+$('toggle').addEventListener('click', () => {
+  const hidden = $('dock').classList.toggle('hidden');
+  $('toggle').textContent = hidden ? 'Show controls' : 'Hide controls';
+  $('toggle').setAttribute('aria-expanded', String(!hidden));
+});
+
+const ptr = { down: false, lx: 0, ly: 0 };
+canvas.addEventListener('pointerdown', e => { ptr.down = true; ptr.lx = e.clientX; ptr.ly = e.clientY; canvas.setPointerCapture(e.pointerId); canvas.classList.add('dragging'); });
+const up = () => { ptr.down = false; canvas.classList.remove('dragging'); };
+canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+canvas.addEventListener('pointermove', e => {
+  if (!ptr.down) return;
+  view.yaw += (e.clientX - ptr.lx) * 0.008; view.pitch += (e.clientY - ptr.ly) * 0.008;
+  view.pitch = Math.max(-1.5, Math.min(1.5, view.pitch));
+  ptr.lx = e.clientX; ptr.ly = e.clientY;
+});
+
+function resize() {
+  DPR = Math.min(devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight; cx = W / 2; cy = H / 2;
+  canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+addEventListener('resize', resize);
+
+/* ---------- frame ---------- */
+let last = performance.now(), time = 0, foldDir = 1;
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.05, (now - last) / 1000); last = now; time += dt;
+  if (pressed.spin && !ptr.down) view.yaw += dt * 0.18;
+  ctx.fillStyle = VOID; ctx.fillRect(0, 0, W, H);
+  const zoom = +ui.zoom.value, opacity = +ui.opacity.value;
+
+  if (mode === 'slice') {
+    scale = Math.min(W, H) * 0.16 * zoom;
+    if (pressed.sweep) { ui.h.value = (2.2 * Math.sin(time * 0.45)).toFixed(2); $('o-h').textContent = (+ui.h.value).toFixed(2); }
+    if (pressed.drift) {
+      ang.xw += dt * 0.21; ang.yw += dt * 0.13; ang.zw += dt * 0.08;
+      for (const k of ['xw', 'yw', 'zw']) { const d = ((ang[k] / DEG) % 360 + 360) % 360; ui['a' + k].value = d; $('o-a' + k).textContent = Math.round(d) + '°'; }
+    }
+    const h = +ui.h.value, R = rotatedVerts();
+    const cs = crossSection(R, h);
+    if (pressed.wire) {
+      // the tesseract's shadow (w dropped), each edge split at the hyperplane: warm above, cool below
+      ctx.lineWidth = 1;
+      EDGES.forEach((e, k) => {
+        const P = R[e[0]], Q = R[e[1]];
+        const pa = project(toView(P)), pb = project(toView(Q));
+        const seg = (a, b, above) => { ctx.strokeStyle = above ? 'rgba(255,179,71,0.45)' : 'rgba(79,91,255,0.3)'; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); };
+        if (cs.hit[k]) { const m = project(toView(cs.hit[k])); seg(pa, m, P[3] > h); seg(m, pb, Q[3] > h); }
+        else seg(pa, pb, P[3] > h);
+      });
+    }
+    drawPolys(cs.faces.map(f => makePoly(f.pts, f.cell)), opacity);
+    // cut vertices
+    ctx.fillStyle = 'rgba(236,232,246,0.9)';
+    cs.hit.forEach(p => { if (!p) return; const s = project(toView(p)); ctx.beginPath(); ctx.arc(s[0], s[1], 2, 0, TAU); ctx.fill(); });
+    $('r-line1').textContent = `hyperplane w = ${h.toFixed(2)}`;
+    $('r-line2').textContent = cs.F ? `section: ${cs.V} vertices · ${cs.E} edges · ${cs.F} faces` : 'section: empty';
+    $('r-line3').textContent = `cells cut: ${cs.faces.map(f => f.cell.name).join(' ') || '—'}`;
+  } else {
+    scale = Math.min(W, H) * 0.085 * zoom;
+    if (pressed.animate) {
+      let f = +ui.fold.value + foldDir * dt * 0.22;
+      if (f >= 1) { f = 1; foldDir = -1; } if (f <= 0) { f = 0; foldDir = 1; }
+      ui.fold.value = f; $('o-fold').textContent = Math.round(f * 100) + '%';
+    }
+    const f = +ui.fold.value, dw = +ui.depth.value;
+    const polys = [];
+    for (const { cell, pts } of netCells(f)) {
+      const p3 = pts.map(p => project4(p, dw));
+      for (const face of CUBE_FACES) polys.push(makePoly(face.map(i => p3[i]), cell));
+    }
+    drawPolys(polys, opacity * 0.7);
+    $('r-line1').textContent = `fold ${Math.round(f * 100)}% · hinge ${Math.round((1 - f) * 90)}°`;
+    $('r-line2').textContent = f < 0.01 ? 'flat net: eight cubes in a cross' : f > 0.99 ? 'closed: every cell meets its neighbours' : 'folding through the fourth axis';
+    $('r-line3').textContent = `w depth ${dw.toFixed(2)}`;
+  }
+}
+
+resize();
+if (innerWidth < 640) $('toggle').click();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
