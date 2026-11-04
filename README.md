@@ -4,7 +4,8 @@ Small browser toys built around a tesseract (a 4D hypercube). No build step, no 
 
 - `index.html` is Tesseract Drift, a generative art and ambient sound toy.
 - `anatomy.html` is Tesseract Anatomy, a cross-section and unfolding explorer.
-- `pages.html` is Tesseract Pages, the first build of the direction below: eight rooms on the eight cells of a turning tesseract.
+- `pages.html` is Tesseract Pages, the outside view: eight rooms on the eight cells of a turning tesseract, seen from outside.
+- `inside.html` is Tesseract Inside, the first-person test: you stand inside the tesseract and the rooms turn through you. This is the direction (see the correction below).
 
 ## Tesseract Drift
 
@@ -32,6 +33,14 @@ Rotation speeds per 4D plane, 3D drift, w depth (the 4D perspective distance), z
 - The tilt only shows while turning; at rest the page is flat and fully usable. On wide screens the arriving room is preloaded onto its cell too, so both rooms are visible during the fold. Each room has a deep link: `pages.html#kitchen`, `#music-studio`, `#the-creatures-room` and so on.
 - The HUD names the active room, how long it has been held, and which cell is arriving. The dock keeps the time held in each room.
 - Inside a claude.ai artifact other sites cannot be framed, so that copy shows a card per room with a link; opened from the repo or from the site, the real rooms show on the faces.
+
+## Tesseract Inside (first-person test, 11/4)
+
+- Your 3D space is the hyperplane w = 0 through the centre of the tesseract. The slice of the tesseract that lies in your space is the room you stand in. Each of its walls is where one cell crosses your space (the same cross-section math as Anatomy), so every wall, the floor and the ceiling is a door into a different cell. At rest the slice is a cube with six walls; while turning it morphs through seven- and eight-sided shapes, and walls slide through you.
+- Eight plain rooms, each a solid colour, no website pages. Every wall carries its room's name, its cell label and its distance along w. Rooms far along the fourth direction are see-through (fade by w), and every cell's edges are drawn faintly as a ghost so you can see rooms beyond the walls.
+- Ground zero is you. Drag the view to look around. Drag the strip to turn the tesseract: sideways rotates your right wall through w (the hidden room swaps in), up and down does the ceiling and floor. The arrows do a quarter turn; "Through the door ahead" turns the room in front of you into your space. Each room has a chip in the dock: tap it and the tesseract steers until that room's wall is dead ahead and solid. It also turns slowly on its own.
+- You can walk a little (WASD or the pad on touch screens), clamped to the ball that every slice contains, but the shifting is the tesseract's.
+- On a phone the repo copy offers "use phone tilt to look" (device orientation, needs a tap to allow on iOS).
 
 ## Direction - "this is it" (Jaron, 11/4/2026 4:20 PM)
 
