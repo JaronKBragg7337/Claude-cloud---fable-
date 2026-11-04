@@ -22,3 +22,16 @@ Rotation speeds per 4D plane, 3D drift, w depth (the 4D perspective distance), z
 
 - **Slice.** A 3D hyperplane at w = h cuts the rotated tesseract. Each of the eight cubic cells meets the hyperplane in a convex polygon, and those polygons are the faces of the cross-section. Sweep h or drift the xw, yw and zw angles to morph the solid. The readout gives its vertex, edge and face counts and which cells it passes through. A faint shadow of the whole tesseract shows the cut, warm above the plane and cool below.
 - **Unfold.** The eight cells laid out as the familiar cross-shaped net, hinged in 4D. The fold slider turns every hinge from flat to closed, and the net passes through the fourth axis on its way to becoming a tesseract again. Cells keep the same colors in both modes, so a face in the slice is recognisably a cut through that cell.
+
+## Direction - "this is it" (Jaron, 11/4/2026 4:20 PM)
+
+The tesseract was the principle, not the product. What it is for:
+
+- **Pages live on a turning tesseract.** Its 8 cells are 8 pages (rooms, sites, tools).
+- **Ground zero.** One fixed spot. Whichever cell is passing through it is the active page (its URL, its content), until the turn moves it on.
+- **The Seam Room, inverted.** In the Seam Room the pages stay still and you walk to them. Here you stay at ground zero and the pages turn to you. Same rule, "where you are picks the page", with the other side moving.
+- **Who turns it.** The user (swipe/grab), the tesseract's own rhythm (a clock, a news cycle), or both: it drifts and you can grab it. Fast = glimpses, slow = you live in one page.
+- **The fold between pages.** Like the Dr Strange folding buildings. As one cell leaves ground zero and the next arrives, the two rooms fold into each other. Anatomy's hyperplane slice already computes those in-between shapes; it can become the transition.
+- Metaverse feel. Same family as the Seam Room (lab/seam-room on the site), whose rooms (studio, creature room, kitchen...) can be the first 8 cells.
+
+The first sketch Claude showed him is a turning tesseract with 8 labelled cells, where the cell nearest ground zero lights up and names the active page. It also shows how long each page was held.
