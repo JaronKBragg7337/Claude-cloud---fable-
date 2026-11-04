@@ -390,17 +390,18 @@ function frame(now) {
   // every face of every room: a wall panel with an open doorway in it, set slightly inside its own room so the
   // two rooms that share a face each keep their own colour; far first
   const panels = [];
+  const outer = CELLS.reduce((a, b) => (b.w > a.w ? b : a)); // the room that wraps around everything: its walls are the backdrop, no doorways out of the world
   for (const c of CELLS) {
     const alpha = Math.max(0.06, 1 - fade * 0.85 * c.dw / 2);
     for (const f of c.faces) {
       const w3 = f.map(i => lerp3(P3[i], c.c3, 0.03));
       const fc = [0,1,2].map(k => w3.reduce((s, p) => s + p[k], 0) / 4);
-      const hole = w3.map(p => lerp3(p, fc, 1 - door));
+      const hole = c === outer ? w3.map(p => lerp3(p, fc, 1)) : w3.map(p => lerp3(p, fc, 1 - door));
       let n = norm3(cross(vsub(w3[1], w3[0]), vsub(w3[2], w3[0])));
       if (dot3(n, vsub(fc, c.c3)) < 0) n = n.map(x => -x);          // outward from the room
       const camOuter = w3.map(toCam), camHole = hole.map(toCam);
       const co = clipNear(camOuter); if (co.length < 3) continue;
-      const ch = clipNear(camHole);
+      const ch = c === outer ? [] : clipNear(camHole);
       const depth = camOuter.reduce((s, p) => s + p[2], 0) / 4;
       const floor = n[1] < -0.6, ceiling = n[1] > 0.6;
       const light = 0.5 + 0.5 * Math.abs(dot3(n, LIGHT));
