@@ -73,3 +73,4 @@ The first sketch Claude showed him is a turning tesseract with 8 labelled cells,
     - Its 6 faces are open doorways into 6 real 3D rooms (the wedge-shaped "frustum" cells, with depth and floors), and the 8th room wraps around everything.
     - The 4D turn makes the projection flow: the inner room shrinks away while a neighbour room swells around you, until you are standing in a different room without walking.
     - Real rooms with depth, not painted walls. The rooms are the experience.
+- **6:25 PM, Jaron tried the room model:** "looks trippy enough it can actually pass to what would make sense. I love it!" This is the one. Build on inside.html from here; Pages and the first slice version are kept only for comparison.
